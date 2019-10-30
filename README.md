@@ -1,1 +1,1 @@
-ygoscripts updater
+# ygo-scripts updater
