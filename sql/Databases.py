@@ -1,16 +1,22 @@
-from pony.orm.core import PrimaryKey, Required
-from pony.orm.core import *
-from app import db
+# for file in os.listdir(".."):
+#     if file.endswith('.cdb'):
+#         print(file)
+from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy.ext.declarative import declarative_base
 
 
-class Organisation(db.Entity):
-    id = PrimaryKey(int, auto=True)
-    Name = Optional(str)
-    Description = Optional(str)
-    Position = Optional(str)
-    created = Optional(int)
-    modified = Optional(int)
-    accessed = Optional(int)
+class Database:
+    Base = declarative_base()
+    engine = create_engine('sqlite:///' + '../' + )
+    metadata = MetaData(bind=engine)
 
 
-db.generate_mapping(create_tables=True)
+class Datas(Database.Base):
+    __table__ = Table('datas', Database.metadata, autoload=True)
+
+
+class Texts(Database.Base):
+    __table__ = Table('texts', Database.metadata, autoload=True)
+
+
+Database.file = "file.cdb"
