@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pony.orm.core import db_session, commit
+# from pony.orm.core import db_session, commit
 
 
 def now():
@@ -11,7 +11,7 @@ class DatabaseMethods:
     def __init__(self, cls):
         self.cls = cls
 
-    @db_session
+    # @db_session
     def __add__(self, *args, **kwargs):
         if not kwargs or len(args) > 0:
             if self.cls.__name__ == 'Organisation':
@@ -23,11 +23,11 @@ class DatabaseMethods:
                        'modified': just_now,
                        'accessed': just_now})
         current = self.cls(**kwargs)
-        commit()
+        # commit()
         kwargs.update({'id': current.id})
         return kwargs
 
-    @db_session
+    # @db_session
     def __update__(self, *args, **kwargs):
         if not kwargs or len(args) > 0:
             if self.cls.__name__ == 'Organisation':
@@ -39,7 +39,7 @@ class DatabaseMethods:
         self.cls.set(self.cls[kwargs['id']], **kwargs)
         return kwargs
 
-    @db_session
+    # @db_session
     def __get__(self, id):
         try:
             item = self._get_dict(self.cls[id])
@@ -49,7 +49,7 @@ class DatabaseMethods:
         except Exception as e:
             return e
 
-    @db_session
+    # @db_session
     def __delete__(self, id):
         try:
             elm = self.__get__(id)
@@ -58,7 +58,7 @@ class DatabaseMethods:
         except Exception as e:
             return e
 
-    @db_session
+    # @db_session
     def __all__(self):
         return [self._get_dict(obj) for obj in self.cls.select()]
 

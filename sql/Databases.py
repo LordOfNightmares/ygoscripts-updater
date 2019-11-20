@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 class Database:
     Base = declarative_base()
-    engine = create_engine('sqlite:///' + '../' + )
+    engine = create_engine('sqlite:///' + '../' + db)
     metadata = MetaData(bind=engine)
 
 
