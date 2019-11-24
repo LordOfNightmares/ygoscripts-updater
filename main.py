@@ -1,7 +1,10 @@
-from pony.orm import Database
+from pprint import pprint
 
-from sql.Connection import DbAuth
+from sqlalchemy import create_engine
 
-db = Database()
-dbAuth = dict(DbAuth('config.yaml').load())
-db.bind(**dbAuth['sqlite'])
+from database.DatabaseMethods import DatabaseMethods
+
+engine = create_engine('sqlite:///test1.cdb')
+db = DatabaseMethods(engine)
+
+pprint(db.get_select_all('texts'))

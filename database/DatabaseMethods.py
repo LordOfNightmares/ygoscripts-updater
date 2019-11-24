@@ -10,10 +10,17 @@ def now():
 
 
 class DatabaseMethods(Tables):
-    def __init__(self, engine):
-        self.engine = engine
-        super().__init__(self.engine)
-        self.session = create_session(bind=self.engine)
+    def __init__(self,
+                 *engines,
+                 in_session=0,
+                 out_session=0):
+        self.engines = engines
+        self.in_session = in_session
+        self.out_session = out_session
+
+        super().__init__(self.engines[self.in_session])
+        self.sessions = [create_session(bind=engine) for engine in self.engines]
+        self.session = self.sessions[self.out_session]
 
     def _commit_(self):
         self.session.commit()
@@ -26,18 +33,6 @@ class DatabaseMethods(Tables):
 
     def __assign_mapped_table(self, table_name):
         return mapper(TempTable, self.meta.tables[table_name])
-
-    def add_column(self, table_name, column):
-        """
-        not tested
-        example:
-            column = Column('new column', String(100), primary_key=True)
-            add_column(engine, table_name, column)
-        """
-
-        column_name = column.compile(dialect=self.engine.dialect)
-        column_type = column.type.compile(self.engine.dialect)
-        self.engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
 
     def add(self, insert_dict: dict, table_name: str) -> None:
         """
@@ -84,15 +79,6 @@ class DatabaseMethods(Tables):
         else:
             return [dict(i) for i in get_id_select][0]
 
-    def get(self, value, table_name: str):
-        """
-        :param value: value existing in database
-        :param table_name: table name where the value is searched in
-        :return: object with the value from database
-        """
-        self.__assign_mapped_table(table_name)
-        return self.session.query(TempTable).get(value)
-
     def get_select_all(self, table_name: str, __object=False) -> object or dict:
         """
         :param table_name: table name where we need all data
@@ -105,6 +91,28 @@ class DatabaseMethods(Tables):
             return get_select
         else:
             return [dict(i) for i in get_select]
+
+    # temporarily unused
+    def add_column(self, table_name, column, database=0):
+        """
+        not tested
+        example:
+            column = Column('new column', String(100), primary_key=True)
+            add_column(engine, table_name, column)
+        """
+
+        column_name = column.compile(dialect=self.engines[database].dialect)
+        column_type = column.type.compile(self.engines[database].dialect)
+        self.engines[database].execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
+
+    def get(self, value, table_name: str):
+        """
+        :param value: value existing in database
+        :param table_name: table name where the value is searched in
+        :return: object with the value from database
+        """
+        self.__assign_mapped_table(table_name)
+        return self.session.query(TempTable).get(value)
 
     def get_all_query(self, table_name):
         """

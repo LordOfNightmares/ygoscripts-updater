@@ -2,20 +2,3 @@ sqlite:
   provider: sqlite
   filename: organisation.db
   create_db: true
-mysql:
-  provider: mysql
-  host: 'localhost'
-  user: 'mac'
-  passwd: '1234'
-  db: 'test3'
-postgres:
-  provider: postgres
-  user: '#'
-  password: '#'
-  host: '#'
-  database: '#'
-oracle:
-  provider: oracle
-  user: '#'
-  password: '#'
-  dsn: '#'
