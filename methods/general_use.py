@@ -41,3 +41,13 @@ def convert_bytes(num):
             # return "%3.1f, %s" % (num, x)
             return num, x
         num /= 1024.0
+
+
+def list_compare(list1, list2):
+    check = False
+    for m in list1:
+        for n in list2:
+            if m == n:
+                check = True
+                return check
+    return check

@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy.orm import create_session, mapper
-
+from sqlalchemy.orm import create_session, mapper, sessionmaker
+from tqdm import tqdm
 from database.DatabaseTables import *
+from methods.general_use import list_compare
 
 
 def now():
@@ -10,19 +11,14 @@ def now():
 
 
 class DatabaseMethods(Tables):
-    def __init__(self,
-                 *engines,
-                 in_session=0,
-                 out_session=0):
-        self.engines = engines
-        self.in_session = in_session
-        self.out_session = out_session
+    def __init__(self, engine):
+        self.engine = engine
+        super().__init__(self.engine)
+        Session = sessionmaker(bind=engine)
+        # self.session = create_session(bind=engine)
+        self.session = Session()
 
-        super().__init__(self.engines[self.in_session])
-        self.sessions = [create_session(bind=engine) for engine in self.engines]
-        self.session = self.sessions[self.out_session]
-
-    def _commit_(self):
+    def commit(self):
         self.session.commit()
 
     def _close_(self):
@@ -79,6 +75,9 @@ class DatabaseMethods(Tables):
         else:
             return [dict(i) for i in get_id_select][0]
 
+    def get_tables(self):
+        return list(self.meta.tables.keys())
+
     def get_select_all(self, table_name: str, __object=False) -> object or dict:
         """
         :param table_name: table name where we need all data
@@ -93,7 +92,8 @@ class DatabaseMethods(Tables):
             return [dict(i) for i in get_select]
 
     # temporarily unused
-    def add_column(self, table_name, column, database=0):
+    '''
+    def add_column(self, table_name, column):
         """
         not tested
         example:
@@ -101,9 +101,9 @@ class DatabaseMethods(Tables):
             add_column(engine, table_name, column)
         """
 
-        column_name = column.compile(dialect=self.engines[database].dialect)
-        column_type = column.type.compile(self.engines[database].dialect)
-        self.engines[database].execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
+        column_name = column.compile(dialect=self.engine.dialect)
+        column_type = column.type.compile(self.engine.dialect)
+        self.engine.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table_name, column_name, column_type))
 
     def get(self, value, table_name: str):
         """
@@ -121,3 +121,24 @@ class DatabaseMethods(Tables):
         :return: query objects?
         """
         return self.session.query(self.__assign_table(table_name))
+    '''
+
+
+def merge_db(db1, db2, merge_form=True):
+    print("--- {} --- {} ---".format(str(db1.engine)[17:-1], str(db2.engine)[17:-1]))
+    for table_name in db1.get_tables():
+        db1_select = db1.get_select_all(table_name)
+        db2_select = db2.get_select_all(table_name)
+        duplicates = [item1['id'] for item1 in db1_select for item2 in db2_select if item1['id'] == item2['id']]
+        try:
+            for item in tqdm(db2_select):
+                if item['id'] in duplicates:
+                    if not merge_form:
+                        db1.edit(item, table_name)
+                else:
+                    db1.add(item, table_name)
+            print("{}:  {}-cards".format(table_name, len(db1.get_select_all(table_name))))
+            db1.commit()
+        except Exception as e:
+            print("ERROR!: Merge Failed! on table:", table_name)
+            print(e.__traceback__.tb_lineno, e)
