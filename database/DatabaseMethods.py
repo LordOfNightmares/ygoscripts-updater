@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy.orm import create_session, mapper, sessionmaker
+from sqlalchemy.orm import mapper, sessionmaker
 from tqdm import tqdm
+
 from database.DatabaseTables import *
-from methods.general_use import list_compare
 
 
 def now():

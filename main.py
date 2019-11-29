@@ -1,13 +1,14 @@
-from pprint import pprint
-
 from sqlalchemy import create_engine
 
 from database.DatabaseMethods import DatabaseMethods, merge_db
 from database.DatabaseTables import Tables
+from methods.git_methods import git_clone
 
 
-def merge(merge_form=True):
-    engine_names = ['sqlite:///test1.cdb', 'sqlite:///test2.cdb']
+def merge(merge_form=True, dbs=None):
+    if dbs is None:
+        dbs = ['test1.cdb', 'test2.cdb']
+    engine_names = ['sqlite:///{}'.format(db) for db in dbs]
     engines = [create_engine(engine_name) for engine_name in engine_names]
 
     out_engine = create_engine('sqlite:///output.cdb')
@@ -22,4 +23,10 @@ def merge(merge_form=True):
     # print(len(db1.get_select_all('texts')))
 
 
-merge()
+# merge()
+git_url = ["https://github.com/Fluorohydride/ygopro-pre-script.git",
+           "https://github.com/Fluorohydride/ygopro-scripts.git",
+           "https://github.com/szefo09/updateYGOPro2.git"]
+path = [x[x.rfind('/') + 1:x.rfind('.')] for x in git_url]
+for folder, url in zip(path, git_url):
+    git_clone(folder, url)

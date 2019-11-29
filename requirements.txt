@@ -1,3 +1,4 @@
 tqdm
 sqlalchemy
 PYyaml
+gitpython
