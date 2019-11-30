@@ -19,4 +19,4 @@
 # '''delete'''
 # # db.delete(8, 'demo')
 # pprint(db.get_select_all('demo'))
-
+from methods.current_project_general import md5

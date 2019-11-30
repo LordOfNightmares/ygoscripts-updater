@@ -9,4 +9,4 @@ class Config:
         yaml.dump(data, open(self.file, 'w'))
 
     def load(self):
-        return yaml.load(open(self.file))
+        return yaml.load(open(self.file), Loader=yaml.FullLoader)

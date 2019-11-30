@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import create_engine
 from sqlalchemy.orm import mapper, sessionmaker
 from tqdm import tqdm
 
@@ -142,3 +143,21 @@ def merge_db(db1, db2, merge_form=True):
         except Exception as e:
             print("ERROR!: Merge Failed! on table:", table_name)
             print(e.__traceback__.tb_lineno, e)
+
+
+def merge(output, dbs=None, merge_form=True):
+    if dbs is None:
+        raise Exception('No Databases found')
+    engine_names = ['sqlite:///{}'.format(db) for db in dbs]
+    engines = [create_engine(engine_name) for engine_name in engine_names]
+
+    out_engine = create_engine('sqlite:///{}'.format(output))
+    Tables(engines[0]).meta.create_all(out_engine)
+
+    db1 = DatabaseMethods(out_engine)
+    print("Databases merge in alphabet order")
+    print("Merge by adding only:", merge_form)
+    for engine in engines:
+        db2 = DatabaseMethods(engine)
+        merge_db(db1, db2, merge_form)
+    # print(len(db1.get_select_all('texts')))

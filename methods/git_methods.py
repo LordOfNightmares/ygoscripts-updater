@@ -53,13 +53,7 @@ class Repository:
 
     def clone(self):
         try:
-            print("Please wait, updating...", self.DIR_NAME)
-            os.mkdir(self.DIR_NAME)
-            self.repo = git.Repo.init(self.DIR_NAME)
-            self.origin = self.repo.create_remote('origin', self.REMOTE_URL)
-            self.origin.fetch(progress=Progress())
-            self.origin.pull(self.origin.refs[0].remote_head)
-        except:
+            print("Please wait, updating:\t", self.DIR_NAME)
             self.repo = git.Repo(self.DIR_NAME)
             self.repo.git.reset('--hard', 'origin/master')
             # ensure master is checked out
@@ -68,21 +62,28 @@ class Repository:
             self.repo.git.reset('--hard', 'origin/master')
             # pull in the changes from from the remote
             if self.repo.git.clean('-nxdf'):
-                print(self.repo.git.clean('-nxdf'))
-                print("\nPlease backup these files mentioned if you need them!")
+                print()
+                print(self.repo.git.clean('-nxdf'), 'from', self.DIR_NAME)
+                print("Please backup these files mentioned if you need them!")
                 ans = input("Do you want to continue?(y/n)")
                 while ans != "y" or ans != "n":
                     if ans == "y":
                         self.repo.git.clean('-xdf')
-                        print("Files were removed.")
+                        print("Files were removed from", self.DIR_NAME)
                         break
                     if ans == "n":
-                        print("Files were kept.")
+                        print("Files were kept in", self.DIR_NAME)
                         break
                     ans = input("Do you want to continue?(y/n)")
             self.origin = self.repo.remote('origin')
-            self.origin.fetch(progress=Progress())
-            self.origin.pull(self.origin.refs[0].remote_head)
+        except:
+            os.mkdir(self.DIR_NAME)
+            self.repo = git.Repo.init(self.DIR_NAME)
+            self.origin = self.repo.create_remote('origin', self.REMOTE_URL)
+
+        self.origin.fetch(progress=Progress())
+        head = [ref for ref in self.origin.refs if 'origin/master' in str(ref)][0].remote_head
+        self.origin.pull(head, progress=Progress())
         self.repo.close()
         print('Done:', self.DIR_NAME)
 
@@ -92,6 +93,11 @@ def git_clone(path, git_url):
 
 
 def create_folder(f_name):
+    """
+    creates a folder by removing the old one and its contents
+    :param f_name: folder name
+    :return: folder name
+    """
     if f_name not in os.listdir():
         os.mkdir(f_name)
     else:
