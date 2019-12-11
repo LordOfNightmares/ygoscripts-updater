@@ -1,22 +1,17 @@
-# from pprint import pprint
-#
-# from sqlalchemy import create_engine
-#
-# from database.DatabaseMethods import DatabaseMethods
-#
-# engine1 = create_engine('sqlite:///test1.cdb')
-# engine2 = create_engine('sqlite:///test2.cdb')
-# engine = create_engine('sqlite:///testingvalues.cdb')
-# db = DatabaseMethods(engine)
-# '''get id'''
-# # for i in db.get_id(110600015, 'texts'):
-# #     print(dict(i))
-# # print(db.get_id(110600015, 'texts'))
-# '''add/update'''
-# # insert = {"id": 2, 'name': 'ok','hint': 'useless text'}
-# # db.add(insert,'demo')
-# # db.edit(insert,'demo')
-# '''delete'''
-# # db.delete(8, 'demo')
-# pprint(db.get_select_all('demo'))
-from methods.current_project_general import md5
+import os
+from pprint import pprint
+
+from methods.GeneralMethods import md5
+from methods.configuration import Config
+
+config = Config('checksum.yaml').load()
+print()
+path = 'script'
+cur = {}
+pprint(config['Aerrata']['c10000010.lua'])
+for file in os.listdir(path):
+    current_file_checksum = md5(os.path.join(path, file))
+    # print(map(file, current_file_checksum))
+    if file =='c10000010.lua':
+        cur.update({file: current_file_checksum})
+pprint(cur['c10000010.lua'])

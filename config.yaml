@@ -3,6 +3,14 @@ Git-Repositories:
   - https://github.com/Fluorohydride/ygopro-scripts.git
   - https://github.com/Ygoproco/Live2017Links
 #  - https://github.com/szefo09/updateYGOPro2.git
+Patches:
+  - Aerrata
+Merge-Except: #example: [folder]\[folder name]
+  Scripts:
+    - ygorepos\Ygoproco-Live2017Links
+    - ygorepos\updateYGOPro2
+  Cdbs:
+    -
 Output-Folder: ygorepos
-Output-cdb: cards_0.cdb
+Output-cdb: cards.cdb
 

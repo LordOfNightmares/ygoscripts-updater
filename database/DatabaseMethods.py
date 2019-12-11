@@ -126,7 +126,7 @@ class DatabaseMethods(Tables):
 
 
 def merge_db(db1, db2, merge_form=True):
-    print("--- {} --- {} ---".format(str(db1.engine)[17:-1], str(db2.engine)[17:-1]))
+    print("--- {} --- {}".format(str(db1.engine)[17:-1], str(db2.engine)[17:-1]))
     for table_name in db1.get_tables():
         db1_select = db1.get_select_all(table_name)
         db2_select = db2.get_select_all(table_name)
@@ -135,6 +135,7 @@ def merge_db(db1, db2, merge_form=True):
             for item in tqdm(db2_select):
                 if item['id'] in duplicates:
                     if not merge_form:
+                        # print(item['name'])
                         db1.edit(item, table_name)
                 else:
                     db1.add(item, table_name)
