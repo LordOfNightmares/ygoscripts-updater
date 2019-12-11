@@ -27,41 +27,39 @@ class CopyManager:
 
     def script_copy(self, file_to_path, file_from_path):
         self.memory = {**self.config[file_from_path], **self.memory}
-        if len(self.memory) == 0:
-            self.__scopy(file_to_path, file_from_path)
-            self.memory = {**self.config[file_from_path], **self.memory}
-        else:
-            self.__scopy(file_to_path, file_from_path)
+        self.__scopy(file_to_path, file_from_path)
         self.checker.update(self.config)
         self.priority += 1
 
-    def hashing(self, file_from_path):
+    def hashing(self, file_to_path, file_from_path):
+        listdir = os.listdir(file_to_path)
         self._load_conf(file_from_path)
+        self.hashed = [hash for folder in self.config for hash in self.config[folder].values()]
         for root, dirs, files in os.walk(file_from_path):
             if '.git' not in root:
                 for file in files:
                     if file.endswith('.lua'):
                         file_from_folder = '\\'.join([root, file])
                         current_file_checksum = md5(file_from_folder)
+                        if file in listdir and current_file_checksum not in self.hashed:
+                            print(file)
+                            os.remove('\\'.join([file_to_path, file]))
                         self.config[file_from_path].update({file: current_file_checksum})
         self.checker.update(self.config)
-        self.hashed = [hash for folder in self.config for hash in self.config[folder].values()]
-        self.cards = [card for folder in self.config for card in self.config[folder].keys()]
 
     def __scopy(self, file_to_path, file_from_path):
         listdir = os.listdir(file_to_path)
+
+        # print(self.memory)
         for root, dirs, files in os.walk(file_from_path):
             if '.git' not in root:
                 for file in tqdm(files, desc="[{}]: {}".format('scripts', root), unit=' files'):
                     file_from_folder = '\\'.join([root, file])
                     current_file_checksum = md5(file_from_folder)
+                    self.hashed.append(current_file_checksum)
                     if file.endswith('.lua'):
-                        if file in self.memory:
+                        if file not in listdir and current_file_checksum in self.memory.values():
                             shutil.copy(file_from_folder, file_to_path)
-                        else:
-                            if current_file_checksum not in self.hashed:
-                                os.remove('\\'.join([file_to_path, file]))
-                                shutil.copy(file_from_folder, file_to_path)
 
     def clean_up(self, file_to_path):
         listdir = os.listdir(file_to_path)

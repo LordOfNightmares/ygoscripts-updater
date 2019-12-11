@@ -136,3 +136,5 @@ node_modules
 
 #Serverless
 .serverless
+/ygorepos/
+/ygocdbs/

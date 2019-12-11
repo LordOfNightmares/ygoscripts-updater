@@ -38,8 +38,8 @@ if __name__ == '__main__':
     paths, git_urls, root_path, script_path, cbs_temp_path = pathing(conf)
     copy = CopyManager('checksum.yaml')
     priority = 0
-    for path, url in zip(paths, git_urls):
-        git_clone(path, url)
+    # for path, url in zip(paths, git_urls):
+    #     git_clone(path, url)
     # hashing
     hashing(conf, copy, paths)
     # copying
