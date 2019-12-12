@@ -2,7 +2,7 @@ Git-Repositories:
   - https://github.com/Fluorohydride/ygopro-pre-script.git
   - https://github.com/Fluorohydride/ygopro-scripts.git
   - https://github.com/Ygoproco/Live2017Links
-#  - https://github.com/szefo09/updateYGOPro2.git
+  - https://github.com/szefo09/updateYGOPro2.git
 Patches:
   - Aerrata
 Merge-Except: #example: [folder]\[folder name]

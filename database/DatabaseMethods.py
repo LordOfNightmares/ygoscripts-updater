@@ -126,20 +126,20 @@ class DatabaseMethods(Tables):
 
 
 def merge_db(db1, db2, merge_form=True):
-    print("--- {} --- {}".format(str(db1.engine)[17:-1], str(db2.engine)[17:-1]))
+    # print("--- {} --- {}".format(str(db1.engine)[17:-1], str(db2.engine)[17:-1]))
     for table_name in db1.get_tables():
         db1_select = db1.get_select_all(table_name)
         db2_select = db2.get_select_all(table_name)
         duplicates = [item1['id'] for item1 in db1_select for item2 in db2_select if item1['id'] == item2['id']]
         try:
-            for item in tqdm(db2_select):
+            for item in db2_select:  # tqdm(db2_select):
                 if item['id'] in duplicates:
                     if not merge_form:
                         # print(item['name'])
                         db1.edit(item, table_name)
                 else:
                     db1.add(item, table_name)
-            print("{}:  {}-cards".format(table_name, len(db1.get_select_all(table_name))))
+            # print("{}:  {}-cards".format(table_name, len(db1.get_select_all(table_name))))
             db1.commit()
         except Exception as e:
             print("ERROR!: Merge Failed! on table:", table_name)
@@ -158,7 +158,8 @@ def merge(output, dbs=None, merge_form=True):
     db1 = DatabaseMethods(out_engine)
     print("Databases merge in alphabet order")
     print("Merge by adding only:", merge_form)
-    for engine in engines:
+
+    for engine in tqdm(engines):
         db2 = DatabaseMethods(engine)
         merge_db(db1, db2, merge_form)
     # print(len(db1.get_select_all('texts')))

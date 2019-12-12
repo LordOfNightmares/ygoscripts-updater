@@ -3,14 +3,15 @@
 *.zip
 test.py
 venv
-
+script
+checksum.yaml
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 .idea
 *.jpeg
-
+*.cdb
 # C extensions
 *.so
 

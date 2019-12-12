@@ -47,7 +47,8 @@ class Progress(git.RemoteProgress):
 
 
 class Repository:
-    def __init__(self, DIR_NAME, REMOTE_URL):
+    def __init__(self, DIR_NAME, REMOTE_URL, path):
+        self.path = path
         self.DIR_NAME = DIR_NAME
         self.REMOTE_URL = REMOTE_URL
 
@@ -81,6 +82,7 @@ class Repository:
             self.repo = git.Repo.init(self.DIR_NAME)
             self.origin = self.repo.create_remote('origin', self.REMOTE_URL)
 
+        #     self.clone()
         self.origin.fetch(progress=Progress())
         head = [ref for ref in self.origin.refs if 'origin/master' in str(ref)][0].remote_head
         self.origin.pull(head, progress=Progress())
@@ -88,8 +90,8 @@ class Repository:
         print('Done:', self.DIR_NAME)
 
 
-def git_clone(path, git_url):
-    Repository(path, git_url).clone()
+def git_clone(path, git_url, root):
+    Repository(path, git_url, root).clone()
 
 
 def create_folder(f_name):
