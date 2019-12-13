@@ -1,5 +1,4 @@
 import os
-
 from tqdm import tqdm
 
 from database.DatabaseMethods import merge

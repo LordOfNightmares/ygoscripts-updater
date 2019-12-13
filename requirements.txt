@@ -2,3 +2,4 @@ tqdm
 sqlalchemy
 PYyaml
 gitpython
+pefile
