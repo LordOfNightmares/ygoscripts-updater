@@ -56,12 +56,12 @@ function CheckAndInstallGit {
             Write-host "Download Location: https://gitforwindows.org/" -ForegroundColor Yellow 
         }
  
-    } Else {
-        Write-host "Git is already installed, no action needed." -ForegroundColor Green
+        } Else {
+            Write-host "Git is already installed, no action needed." -ForegroundColor Green
+        }
+     
+     
     }
- 
- 
-}
- 
- 
-CheckAndInstallGit -Repo "git-for-windows" -TempDir "c:\temp"
+     
+     
+    CheckAndInstallGit -Repo "git-for-windows" -TempDir "c:\temp"

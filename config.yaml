@@ -13,4 +13,4 @@ Merge-Except: #example: [folder]\[folder name]
     -
 Output-Folder: ygorepos
 Output-cdb: cards.cdb
-
+Expansions: https://github.com/LordOfNightmares/expansions.git
