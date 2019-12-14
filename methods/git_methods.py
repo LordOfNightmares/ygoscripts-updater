@@ -108,12 +108,16 @@ def create_folder(f_name):
     return f_name
 
 
-def clean(path):
-    for root, dirs, files in os.walk(path):
-        [dirs.remove(d) for d in list(dirs) if d == '.git']
-        for dir in dirs:
-            shutil.rmtree(os.path.join(root, dir))
-        for file in files:
-            if file not in os.listdir(path + '\\.git'):
-                if not file.startswith('.'):
-                    os.remove(os.path.join(root, file))
+def clean(path, root='.'):
+    try:
+        if path in os.listdir(root):
+            for root, dirs, files in os.walk(path):
+                [dirs.remove(d) for d in list(dirs) if d == '.git']
+                for dir in dirs:
+                    shutil.rmtree(os.path.join(root, dir))
+                for file in files:
+                    if file not in os.listdir(path + '\\.git'):
+                        if not file.startswith('.'):
+                            os.remove(os.path.join(root, file))
+    except:
+        pass

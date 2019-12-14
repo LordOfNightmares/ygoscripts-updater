@@ -107,13 +107,11 @@ if __name__ == '__main__':
             abs = os.path.join(os.path.abspath(tmp), 'git_install.ps1')
             with open(abs, 'w') as file:
                 file.write(power_shell())
-                print(abs)
             bashCommand = 'powershell -executionpolicy bypass -File ' + abs
-            print(bashCommand)
             process = subprocess.run(bashCommand)
 
         from methods.configuration import Config
-        from methods.git_methods import git_clone
+        from methods.git_methods import git_clone, clean
 
         path = "expansions"
         name_of_content = 'Expansions'
