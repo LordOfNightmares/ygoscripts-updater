@@ -1,5 +1,5 @@
-tqdm
 sqlalchemy
+tqdm
 PYyaml
-gitpython
+# gitpython
 pefile

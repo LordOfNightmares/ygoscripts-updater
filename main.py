@@ -1,64 +1,75 @@
 import os
-from tqdm import tqdm
+import subprocess
+import traceback
+from tempfile import TemporaryDirectory
 
-from database.DatabaseMethods import merge
-from methods.GeneralMethods import pathing
-from methods.configuration import Config
+from sqlalchemy import create_engine
+
+from database import DatabaseMethods
+from methods.config import Config, YamlManager
 from methods.copy_method import CopyManager
-from methods.git_methods import git_clone
+from updater import power_shell
 
 
-def copying(conf, copy, paths, script_path, cbs_temp_path):
-    val = len(conf['Patches']) + len(paths)
-    progress = tqdm(total=val, desc='Copying')
-    for folder in conf['Patches']:
-        # print('Pre patch files')
-        if folder in os.listdir('.'):
-            if folder not in conf['Merge-Except']['Scripts']:
-                copy.script_copy(script_path, folder)
-            if folder not in conf['Merge-Except']['Cdbs']:
-                copy.cdb_copy(cbs_temp_path, folder)
-        progress.update(1)
-    for path in paths:
-        # print('Moving files')
-        if path not in conf['Merge-Except']['Scripts']:
-            copy.script_copy(script_path, path)
-        if path not in conf['Merge-Except']['Cdbs']:
-            copy.cdb_copy(cbs_temp_path, path)
-        progress.update(1)
-    progress.close()
+def copying(copy):
+    for folder_path in conf.script:
+        copy.script_copy(conf.store_script, folder_path)
+        copy.cdb_copy(conf.store_temp_cbs, folder_path)
+    for folder in conf.yaml_config_load['Patches']:
+        copy.script_copy(conf.store_script, folder)
+        copy.cdb_copy(conf.store_temp_cbs, folder)
+    copy.bar.close()
+    copy.clean_cache(conf.store_script)
 
 
-def hashing(conf, copy, paths):
-    val = len(conf['Patches']) + len(paths)
-    progress = tqdm(total=val, desc='Hashing')
-    for folder in conf['Patches']:
-        if folder in os.listdir('.'):
-            if folder not in conf['Merge-Except']['Scripts']:
-                copy.hashing(script_path, folder)
-        progress.update(1)
 
-    for path in paths:
-        if path not in conf['Merge-Except']['Scripts']:
-            copy.hashing(script_path, path)
-        progress.update(1)
-    progress.close()
+def merge_cdbs():
+    cdbs = ["/".join([conf.store_temp_cbs, x]) for x in os.listdir(conf.store_temp_cbs)]
+    dbs = [DatabaseMethods.load_database(cdb) for cdb in cdbs]
+    name = conf.yaml_config_load['Output-cdb']
+    try:
+        os.remove(name)
+    except:
+        pass
+    dbs[0].MetaData.create_all(create_engine(f'sqlite:///{name}'))
+    output_cdb = DatabaseMethods.load_database(name)
+    merge = DatabaseMethods.merge(dbs)
+    DatabaseMethods.add_to_db(output_cdb, merge)
+def pre():
+    try:
+        os.makedirs('ygorepos')
+    except:
+        pass
+    try:
+        os.makedirs('script')
+    except:
+        pass
+
+def install():
+    print('\nPlease wait checking for Git installation if not installed it will be installed now.')
+    with TemporaryDirectory() as tmp:
+        abs = os.path.join(os.path.abspath(tmp), 'git_install.ps1')
+        with open(abs, 'w') as file:
+            file.write(power_shell())
+        bashCommand = 'powershell -executionpolicy bypass -File ' + abs
+        subprocess.run(bashCommand)
+    if len(os.listdir("ygorepos")) == 0:
+        subprocess.run("git_set.bat")
+    if input("Update Repos(y/n)") == 'y':
+        subprocess.run("git_pull.bat")
 
 
 if __name__ == '__main__':
-    conf = Config('config.yaml').load()
-    paths, git_urls, root_path, script_path, cbs_temp_path = pathing(conf)
-    copy = CopyManager('checksum.yaml')
-    priority = 0
-    for path, url in zip(paths, git_urls):
-        git_clone(path, url, root_path)
-    # hashing
-    hashing(conf, copy, paths)
-    # copying
-    copying(conf, copy, paths, script_path, cbs_temp_path)
-    copy.clean_up(script_path)
-    # print([os.path.join(cbs_temp_path, p) for p in os.listdir(cbs_temp_path)])
-    if conf['Output-cdb'] in os.listdir('.'):
-        os.remove(conf['Output-cdb'])
-    merge(conf['Output-cdb'], [os.path.join(cbs_temp_path, p) for p in os.listdir(cbs_temp_path)])
-    input("Done.")
+    try:
+        pre()
+        install()
+        conf = Config('config.yaml')
+        checksums = YamlManager('checksum.yaml')
+        copy = CopyManager(checksums, conf)
+        copying(copy)
+
+        merge_cdbs()
+    except:
+        print(traceback.format_exc())
+    finally:
+        input("Press enter to leave")

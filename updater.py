@@ -102,6 +102,7 @@ if __name__ == '__main__':
     try:
         import subprocess
         import os
+
         print('\nPlease wait checking for Git installation if not installed it will be installed now.')
         with TemporaryDirectory() as tmp:
             abs = os.path.join(os.path.abspath(tmp), 'git_install.ps1')
@@ -110,13 +111,13 @@ if __name__ == '__main__':
             bashCommand = 'powershell -executionpolicy bypass -File ' + abs
             process = subprocess.run(bashCommand)
 
-        from methods.configuration import Config
+        from methods.configuration import YamlManager
         from methods.git_methods import git_clone, clean
 
         path = "expansions"
         name_of_content = 'Expansions'
-        git_url = "https://github.com/LordOfNightmares/expansions.git"
-        conf = Config('config.yaml')
+
+        conf = YamlManager('config.yaml')
         if system_conf():
             openfile = open(system_conf(), 'r', encoding='utf-8')
             read_line = [line.strip() for line in openfile]

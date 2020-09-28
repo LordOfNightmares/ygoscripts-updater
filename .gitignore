@@ -137,5 +137,8 @@ node_modules
 
 #Serverless
 .serverless
-/ygorepos/
-/ygocdbs/
+
+#Other
+/Aerrata/*
+/ygorepos/*
+/ygocdbs/*
