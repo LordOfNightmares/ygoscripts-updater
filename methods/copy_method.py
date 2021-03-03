@@ -94,6 +94,7 @@
 import concurrent.futures
 import os
 import shutil
+import traceback
 from pathlib import Path
 from pprint import pprint
 
@@ -223,11 +224,26 @@ class CopyManager:
     def clean_cache(self, to_path):
         script_files = os.listdir(to_path)
         for folder, files in self.cache_p.data.items():
-            for file, hash in files.items():
+            for file, hash in files.copy().items():
                 if file not in self.cache_t[folder]:
-                    print(f"{file}:{hash} removed")
-                    self.cache_p.data.pop(file)
-                    os.remove('\\'.join([to_path, file]))
+                    try:
+                        temp_path = '\\'.join([to_path, file])
+                        try:
+                            if md5(temp_path) == self.cache_p.data[folder][file]:
+                                os.remove(temp_path)
+                        except Exception as e:
+                            print(e)
+                        try:
+                            self.cache_p.data[folder].pop(file)
+                        except Exception as e:
+                            print(e)
+                    except:
+                        pass
+                    finally:
+                        print(f"{file}:\t{hash} removed")
+        for folder, files in self.cache_p.data.copy().items():
+            if len(self.cache_p.data[folder]) == 0:
+                self.cache_p.data.pop(folder)
         for file in script_files:
             count = 0
             for k, v in self.cache_p.data.items():
