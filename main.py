@@ -16,11 +16,10 @@ def copying(copy):
         copy.script_copy(conf.store_script, folder_path)
         copy.cdb_copy(conf.store_temp_cbs, folder_path)
     for folder in conf.yaml_config_load['Patches']:
-        copy.script_copy(conf.store_script, folder)
-        copy.cdb_copy(conf.store_temp_cbs, folder)
+        copy.script_copy(conf.store_script, str(folder))
+        copy.cdb_copy(conf.store_temp_cbs, str(folder))
     copy.bar.close()
     copy.clean_cache(conf.store_script)
-
 
 
 def merge_cdbs():
@@ -35,6 +34,8 @@ def merge_cdbs():
     output_cdb = DatabaseMethods.load_database(name)
     merge = DatabaseMethods.merge(dbs)
     DatabaseMethods.add_to_db(output_cdb, merge)
+
+
 def pre():
     try:
         os.makedirs('ygorepos')
@@ -44,6 +45,7 @@ def pre():
         os.makedirs('script')
     except:
         pass
+
 
 def install():
     print('\nPlease wait checking for Git installation if not installed it will be installed now.')
@@ -63,6 +65,7 @@ if __name__ == '__main__':
     try:
         pre()
         install()
+
         conf = Config('config.yaml')
         checksums = YamlManager('checksum.yaml')
         copy = CopyManager(checksums, conf)

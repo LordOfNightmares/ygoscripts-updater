@@ -25,7 +25,12 @@ class YamlManager:
 
     def write(self, data=None, append=False):
         if data:
-            self.data = data
+            if type(data) == str:
+                with open(self.file, 'w') as file_object:
+                    file_object.write(data)
+                return
+            else:
+                self.data = data
         if append:
             yaml.dump(self.data, open(self.file, 'a'))
         else:
@@ -48,7 +53,25 @@ class YamlManager:
 class Config:
     def __init__(self, yaml_conf):
         self.yaml_config = YamlManager(yaml_conf)
-        self.yaml_config_load = self.yaml_config.load()
+        self.yaml_config.load()
+        if self.yaml_config.data == {}:
+            data = """Patches:
+   - 
+Merge-Except:
+   script:
+      - 
+   cdb:
+      - 
+Repositoriy-priority:
+   script:
+      - 
+   cdb:
+      - 
+Output-cdb: cards.cdb
+"""
+            self.yaml_config.write(data=data)
+            self.yaml_config.load()
+        self.yaml_config_load = self.yaml_config.data
         self.store_temp_cbs = create_folder('ygocdbs')
         self.store_repos = 'ygorepos'
         self.store_script = 'script'
@@ -63,7 +86,7 @@ class Config:
         self.cdbs = rearrange_list(self.yaml_config_load['Repositoriy-priority']['cdb'], repos)
         self.script = rearrange_list(self.yaml_config_load['Repositoriy-priority']['script'], repos)
 
-# def merge(output, dbs=None, merge_form=True):
+    # def merge(output, dbs=None, merge_form=True):
 #     if dbs is None:
 #         raise Exception('No Databases found')
 #     engine_names = ['sqlite:///{}'.format(db) for db in dbs]

@@ -2,7 +2,6 @@
 
 block_cipher = None
 
-
 a = Analysis(['main.py'],
              pathex=['E:\\Desktop\\Applications\\_RELEASES\\_script_upgraded\\ygoscripts-updater'],
              binaries=[],
@@ -32,4 +31,4 @@ exe = EXE(pyz,
           runtime_tmpdir=None,
           console=True,
           version='version_script_updater.txt',
-           icon='script_updater.ico')
+          icon='script_updater.ico')

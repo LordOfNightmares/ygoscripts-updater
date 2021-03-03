@@ -159,7 +159,7 @@ class ThreadingFile(Concurrency):
 def counter(conf):
     folders = conf.yaml_config_load['Patches'] + [os.path.join(conf.store_repos, folder) for folder in conf.script]
     count = [file for folder in folders
-             for root, dirs, files in os.walk(folder)
+             for root, dirs, files in os.walk(str(folder))
              if '.git' not in root
              for file in files
              if file.endswith('.lua')]
@@ -193,7 +193,7 @@ class CopyManager:
             file_from_path = file_from_path
         listdir = os.listdir(file_to_path)
         self.cdb_path = os.path.join(self.conf.store_repos, file_from_path)
-        for root, dirs, files in os.walk(file_from_path):
+        for root, dirs, files in os.walk(str(file_from_path)):
             if '.git' not in root:
                 for file in [f + ".cdb" for f in sorted([Path(f).stem for f in files if f.endswith('.cdb')])]:
                     if file not in listdir and file.endswith('.cdb'):
@@ -209,7 +209,7 @@ class CopyManager:
             from_path = os.path.join(self.conf.store_repos, scripts_from)
         else:
             from_path = scripts_from
-        for root, dirs, files in os.walk(from_path):
+        for root, dirs, files in os.walk(str(from_path)):
             if '.git' not in root:
                 ThreadingFile(files).get(conf=self.conf,
                                          root=root,
