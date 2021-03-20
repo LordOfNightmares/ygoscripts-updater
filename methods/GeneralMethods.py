@@ -65,8 +65,8 @@ def merge_list_of_dicts(l1, l2, key):
 
 
 def md5(fname):
-    BLOCKSIZE = 65536
-    hasher = hashlib.sha1()
+    BLOCKSIZE = 131072
+    hasher = hashlib.md5()
     with open(fname, 'rb') as file:
         buf = file.read(BLOCKSIZE)
         while len(buf) > 0:

@@ -15,7 +15,7 @@ def copying(copy):
     for folder_path in conf.script:
         copy.script_copy(conf.store_script, folder_path)
         copy.cdb_copy(conf.store_temp_cbs, folder_path)
-    for folder in conf.yaml_config_load['Patches']:
+    for folder in conf.yaml_config_load['Patches'][::-1]:
         copy.script_copy(conf.store_script, str(folder))
         copy.cdb_copy(conf.store_temp_cbs, str(folder))
     copy.bar.close()
