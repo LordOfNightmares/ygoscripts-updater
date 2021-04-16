@@ -1,6 +1,8 @@
+import logging
 import os
 import subprocess
 import traceback
+from datetime import datetime
 from tempfile import TemporaryDirectory
 
 from sqlalchemy import create_engine
@@ -62,6 +64,9 @@ def install():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s:\t%(threadName)s:%(levelname)s:\t%(message)s',
+                        level=logging.INFO,
+                        datefmt="%H:%M:%S")
     try:
         pre()
         install()
@@ -72,7 +77,8 @@ if __name__ == '__main__':
         copying(copy)
 
         merge_cdbs()
-    except:
-        print(traceback.format_exc())
+    except Exception:
+        with open("error.txt", 'a') as error_file:
+            error_file.write(f'{datetime.now().strftime("%d/%m/%Y | %H:%M:%S |")}\n{traceback.format_exc()}\n\n')
     finally:
         input("Press enter to leave")

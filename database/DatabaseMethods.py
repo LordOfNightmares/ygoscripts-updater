@@ -1,5 +1,5 @@
 from database.meta import EngineUri, DB
-from database.reflect import Reflect, Datas, Texts
+from database.reflect import Datas, Texts, reflect
 from methods.GeneralMethods import time_it
 
 
@@ -35,6 +35,7 @@ def add_to_db(db, data):
     finally:
         session.close()
 
+
 # @time_it
 def load_database(db_path, reflected_tables=None):
     if reflected_tables is None:
@@ -45,5 +46,5 @@ def load_database(db_path, reflected_tables=None):
     db.load_engine(engine)
     db.MetaData.bind = db.engine
     db.reflected_tables = reflected_tables
-    Reflect(db.reflected_tables).get(db)
+    reflect(db.reflected_tables, database=db)
     return db

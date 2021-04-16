@@ -1,4 +1,3 @@
-import concurrent.futures
 import logging
 
 from sqlalchemy import Table, inspect
@@ -6,7 +5,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import mapper, clear_mappers
 from sqlalchemy.orm.base import _is_mapped_class
 
-from methods.Concurrency import Concurrency
+from methods.Concurrency import threaded
 
 
 @event.listens_for(Table, "column_reflect")
@@ -85,24 +84,14 @@ except:
     pass
 
 
-class Reflect(Concurrency):
-    def get(self, database=None):
-        self.database = database
-        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
-            for args, instance in zip(self.args, executor.map(self.send_instance, self.args)):
-                try:
-                    if instance:
-                        self.all_instances.append(instance)
-                except:
-                    pass
-        return self.all_instances
-
-    # @time_it
-    def process(self, item):
-        if _is_mapped_class(item[0]):
-            clear_mappers()
-        _class = item[0]
-        logging.info(f'Reflecting {_class.__tablename__} from {self.database.engine}')
-        table = Table(_class.__tablename__, self.database.MetaData, autoload=True)
-        mapper(_class, table)
-        # logging.info(_class.__tablename__)
+@threaded(workers=16)
+def reflect(*args, **kwargs):
+    if "database" not in kwargs:
+        logging.exception(f'Database is missing')
+    if _is_mapped_class(args[0]):
+        clear_mappers()
+    _class = args[0]
+    logging.info(f'Reflecting {_class.__tablename__} from {kwargs["database"].engine}')
+    table = Table(_class.__tablename__, kwargs["database"].MetaData, autoload=True)
+    mapper(_class, table)
+    # logging.info(_class.__tablename__)

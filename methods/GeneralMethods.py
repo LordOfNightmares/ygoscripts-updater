@@ -2,27 +2,31 @@ import hashlib
 import os
 import shutil
 import time
+from functools import wraps
 
 
-def create_folder(f_name):
+def create_folder(path):
     """
     Creates a folder by removing the old one and its contents
-    :param f_name: folder name
+    :param path: folder name
     :return: folder name
     """
-    if f_name not in os.listdir():
-        os.mkdir(f_name)
+    try:
+        os.listdir(path)
+    except:
+        os.makedirs(path)
     else:
-        shutil.rmtree(f_name)
-        os.mkdir(f_name)
-    return f_name
+        shutil.rmtree(path)
+        os.makedirs(path)
+    return path
 
 
 def time_it(func):
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        start_time = time.time()
+        start_time = time.process_time()
         val = func(*args, **kwargs)
-        duration = time.time() - start_time
+        duration = time.process_time() - start_time
         print(f"Executed {func.__name__} in {duration} seconds")
         return val
 

@@ -1,14 +1,13 @@
 Patches:
-  - Aerrata
+   - 
 Merge-Except:
-  script:
-    -
-  cdb:
-    -
+   script:
+      - 
+   cdb:
+      - 
 Repositoriy-priority:
-  script:
-    -
-  cdb:
-    -
+   script:
+      - 
+   cdb:
+      - 
 Output-cdb: cards.cdb
-

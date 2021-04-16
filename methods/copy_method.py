@@ -1,4 +1,4 @@
-import concurrent.futures
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -6,60 +6,47 @@ from pprint import pprint
 
 from tqdm import tqdm
 
-from methods.Concurrency import Concurrency
+from methods.Concurrency import threaded
 from methods.GeneralMethods import md5
 
 
-class ThreadingFile(Concurrency):
-    def get(self,
-            conf=None,
-            root=None,
-            to_path=None,
-            from_path=None,
-            scripts_from=None,
-            cache_p=None,
-            cache_t=None,
-            progressbar=None):
-        self.conf = conf
-        self.root = root
-        self.to_path = to_path
-        self.scripts_from = scripts_from
-        self.from_path = from_path
-        self.cache_p = cache_p
-        self.cache_t = cache_t
-        self.progressbar = progressbar
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            for args, instance in zip(self.args, executor.map(self.send_instance, self.args)):
-                try:
-                    if instance:
-                        self.all_instances.append(instance)
-                except:
-                    pass
-        return self.all_instances
-
-    def process(self, item):
-        file = item[0]
+@threaded(workers=16)
+def files_get(*args, **kwargs):
+    file = args[0]
+    conf = kwargs['conf']
+    root = kwargs['root']
+    to_path = kwargs['to_path']
+    scripts_from = kwargs['scripts_from']
+    from_path = kwargs['from_path']
+    cache_p = kwargs['cache_p']
+    cache_t = kwargs['cache_t']
+    progressbar = kwargs['progressbar']
+    try:
         # logging.info(f'Reflecting {_class.__tablename__} from {self.database.engine}')
-        from_folder = os.path.join(self.root, file)
-        hash = md5(from_folder)
-        if file.endswith('.lua') and file not in self.cache_t[self.scripts_from]:
-            self.cache_t[self.scripts_from].update({file: hash})
-            fipp = [{file: hash}.items() <= self.cache_p.data[patch].items()
-                    for patch in self.conf.yaml_config_load['Patches']
-                    if patch in self.cache_p.data][0]
-            ip = self.scripts_from in self.conf.yaml_config_load['Patches']
-            fi = not {file: hash}.items() <= self.cache_p.data[self.scripts_from].items()
-            fifp = not ip and fi
-            fitt = ip and fi
-            if not fipp and fitt:
-                self.cache_p.data[self.scripts_from].update({file: hash})
-                shutil.copy(from_folder, self.to_path)
-            if not fipp and fifp:
-                self.cache_p.data[self.scripts_from].update({file: hash})
-                shutil.copy(from_folder, self.to_path)
-            self.progressbar.update(1)
-
-    # logging.info(f"{from_folder}")
+        if file.endswith('.lua'):
+            from_folder = os.path.join(root, file)
+            if (file in cache_t[scripts_from] and os.path.getmtime(from_folder) != os.path.getmtime(scripts_from)) \
+                    or (file not in cache_t[scripts_from]):
+                hash = md5(from_folder)
+                model = {file: {"hash": hash,
+                                "time": os.path.getmtime(from_folder)}}
+                cache_t[scripts_from].update(model)
+                fipp = [model.items() <= cache_p.data[patch].items()
+                        for patch in conf.yaml_config_load['Patches']
+                        if patch in cache_p.data][0]
+                ip = scripts_from in conf.yaml_config_load['Patches']
+                fi = not model.items() <= cache_p.data[scripts_from].items()
+                fifp = not ip and fi
+                fitt = ip and fi
+                if (not fipp and fitt) or (not fipp and fifp):
+                    cache_p.data[scripts_from].update(model)
+                    shutil.copy(from_folder, to_path)
+            # if file in cache_t[scripts_from] and os.path.getmtime(from_folder) == cache_p.data[scripts_from][file]['time']:
+            #     pass
+            progressbar.update(1)
+        # logging.info(f"{from_folder}")
+    except:
+        logging.exception(f'Item:{file}')
 
 
 def counter(conf):
@@ -117,14 +104,23 @@ class CopyManager:
             from_path = scripts_from
         for root, dirs, files in os.walk(str(from_path)):
             if '.git' not in root:
-                ThreadingFile(files).get(conf=self.conf,
-                                         root=root,
-                                         to_path=to_path,
-                                         from_path=from_path,
-                                         scripts_from=scripts_from,
-                                         cache_p=self.cache_p,
-                                         cache_t=self.cache_t,
-                                         progressbar=self.bar)
+                # ThreadingFile(files).get(conf=self.conf,
+                #                          root=root,
+                #                          to_path=to_path,
+                #                          from_path=from_path,
+                #                          scripts_from=scripts_from,
+                #                          cache_p=self.cache_p,
+                #                          cache_t=self.cache_t,
+                #                          progressbar=self.bar)
+                files_get(files,
+                          conf=self.conf,
+                          root=root,
+                          to_path=to_path,
+                          from_path=from_path,
+                          scripts_from=scripts_from,
+                          cache_p=self.cache_p,
+                          cache_t=self.cache_t,
+                          progressbar=self.bar)
 
     # @time_it
     def clean_cache(self, to_path):
