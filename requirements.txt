@@ -1,4 +1,4 @@
 sqlalchemy
 tqdm
 PYyaml
-pefile
+#pefile

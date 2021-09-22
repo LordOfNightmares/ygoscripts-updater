@@ -5,7 +5,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import mapper, clear_mappers
 from sqlalchemy.orm.base import _is_mapped_class
 
-from methods.Concurrency import threaded
+from methods.Concurrency import threading
 
 
 @event.listens_for(Table, "column_reflect")
@@ -14,8 +14,8 @@ def column_reflect(inspector, table, column_info):
     Database cells alias set 1st letter of the database name
     """
     # set column.key = "attr_<lower_case_name>"
-
-    column_info['key'] = f"{str(table)}_{column_info['name'].lower()}"
+    if column_info['name'].lower() != 'id':
+        column_info['key'] = f"{str(table)}_{column_info['name'].lower()}"
     # print(column_info['key'])
 
 
@@ -46,7 +46,7 @@ try:
 
     class Datas(ReflectedTable):
         __tablename__ = "datas"
-        datas_id = None
+        id = None
         datas_ot = None
         datas_alias = None
         datas_setcode = None
@@ -61,7 +61,7 @@ try:
 
     class Texts(ReflectedTable):
         __tablename__ = "texts"
-        texts_id = None
+        id = None
         texts_name = None
         texts_desc = None
         texts_str1 = None
@@ -84,7 +84,7 @@ except:
     pass
 
 
-@threaded(workers=16)
+@threading(workers=2)
 def reflect(*args, **kwargs):
     if "database" not in kwargs:
         logging.exception(f'Database is missing')

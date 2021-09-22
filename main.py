@@ -1,33 +1,26 @@
 import logging
 import os
-import subprocess
 import traceback
 from datetime import datetime
-from tempfile import TemporaryDirectory
 
 from sqlalchemy import create_engine
 
 from database import DatabaseMethods
-from methods.config import Config, YamlManager
-from methods.copy_method import CopyManager
-from updater import power_shell
-
-
-def copying(copy):
-    for folder_path in conf.script:
-        copy.script_copy(conf.store_script, folder_path)
-        copy.cdb_copy(conf.store_temp_cbs, folder_path)
-    for folder in conf.yaml_config_load['Patches'][::-1]:
-        copy.script_copy(conf.store_script, str(folder))
-        copy.cdb_copy(conf.store_temp_cbs, str(folder))
-    copy.bar.close()
-    copy.clean_cache(conf.store_script)
+from methods import config
+from methods.GeneralMethods import time_it, list_diff
+from methods.GeneralStructs import Temp
+from methods.copy_method import get_scripts, set_scripts, Cache, cdb_copy
+from methods.prep.git import preparation
 
 
 def merge_cdbs():
-    cdbs = ["/".join([conf.store_temp_cbs, x]) for x in os.listdir(conf.store_temp_cbs)]
+    cdbs = sorted(["/".join([Temp.conf.store_temp_cbs, file]) for file in os.listdir(Temp.conf.store_temp_cbs)],
+                  reverse=True)
     dbs = [DatabaseMethods.load_database(cdb) for cdb in cdbs]
-    name = conf.yaml_config_load['Output-cdb']
+
+    if len(cdbs) == 0:
+        return
+    name = Temp.conf.data['Output-cdb']
     try:
         os.remove(name)
     except:
@@ -38,44 +31,46 @@ def merge_cdbs():
     DatabaseMethods.add_to_db(output_cdb, merge)
 
 
-def pre():
-    try:
-        os.makedirs('ygorepos')
-    except:
-        pass
-    try:
-        os.makedirs('script')
-    except:
-        pass
+def clean_script_cache(directories, cache):
+    cp = cache.all().copy()
+    roots = [root for root in cp if root is not None]
+    for root in list_diff(roots, directories):
+        if root is not None and root in cp:
+            logging.info(f'Removed: {root}')
+            cache.remove(root)
 
 
-def install():
-    print('\nPlease wait checking for Git installation if not installed it will be installed now.')
-    with TemporaryDirectory() as tmp:
-        abs = os.path.join(os.path.abspath(tmp), 'git_install.ps1')
-        with open(abs, 'w') as file:
-            file.write(power_shell())
-        bashCommand = 'powershell -executionpolicy bypass -File ' + abs
-        subprocess.run(bashCommand)
-    if len(os.listdir("ygorepos")) == 0:
-        subprocess.run("git_set.bat")
-    if input("Update Repos(y/n)") == 'y':
-        subprocess.run("git_pull.bat")
+@time_it
+def scripts(conf):
+    pre_cache = Cache('p_cache.bin')
+    # print(pre_cache)
+    paths = conf.paths()
+    for i, path in enumerate(paths):
+        if path is not None:
+            Temp.path = path
+            Temp.prio = i
+            get_scripts(pre_cache)
+            cdb_copy(path)
+            # if len(scriptCache.all()) == 0:
+            #     print(cache.remove(cache.out_path))
+            #
+    clean_script_cache(paths, pre_cache)
+    # print(pre_cache)
+    out_cache = Cache('o_cache.bin')
+    Temp.path = 'script'
+    set_scripts(pre_cache, out_cache)
+    out_cache.save('o_cache.bin')
+    pre_cache.save('p_cache.bin')
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s:\t%(threadName)s:%(levelname)s:\t%(message)s',
+    logging.basicConfig(format='%(asctime)s| %(threadName)s | %(levelname)-5s| %(message)s',
                         level=logging.INFO,
                         datefmt="%H:%M:%S")
     try:
-        pre()
-        install()
-
-        conf = Config('config.yaml')
-        checksums = YamlManager('checksum.yaml')
-        copy = CopyManager(checksums, conf)
-        copying(copy)
-
+        preparation()
+        Temp.conf = config.Config('config.yaml')
+        scripts(Temp.conf)
         merge_cdbs()
     except Exception:
         with open("error.txt", 'a') as error_file:

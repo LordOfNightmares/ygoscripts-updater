@@ -1,158 +1,208 @@
+import json
 import logging
 import os
 import shutil
-from pathlib import Path
-from pprint import pprint
 
 from tqdm import tqdm
 
-from methods.Concurrency import threaded
+from methods.Concurrency import threading
 from methods.GeneralMethods import md5
+from methods.GeneralStructs import Temp, FactoryRepo
 
 
-@threaded(workers=16)
-def files_get(*args, **kwargs):
-    file = args[0]
-    conf = kwargs['conf']
-    root = kwargs['root']
-    to_path = kwargs['to_path']
-    scripts_from = kwargs['scripts_from']
-    from_path = kwargs['from_path']
-    cache_p = kwargs['cache_p']
-    cache_t = kwargs['cache_t']
+class Cache(FactoryRepo):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class ScriptCache(FactoryRepo):
+    def __init__(self):
+        super().__init__()
+
+
+class Script:
+    def __init__(self, name=None, root=None, prio=None, checksum=None, time=None, path=None, old_path=None):
+        self.root = root
+        self.name = name
+        self.checksum = checksum
+        self.time = time
+        self.prio = prio
+        if path:
+            self.path = path
+        else:
+            self.path = os.path.join(self.root, self.name)
+        if old_path:
+            self.old_path = old_path
+        else:
+            self.old_path = self.path
+
+    def __iter__(self):
+        for k, v in vars(self).items():
+            yield k, v
+
+    def __repr__(self):
+        return json.dumps(self, sort_keys=True, default=lambda o: o.__dict__, indent=2)
+
+
+def get_files(path):
+    return {file: {'root': root,
+                   'name': file,
+                   'path': path,
+                   'time': os.path.getmtime(path)}
+            for root, dirs, files in os.walk(str(path))
+            if '.git' not in root
+            for file in files
+            if file.endswith('.lua') and (path := os.path.join(root, file))}
+
+
+def cdb_copy(path):
+    tmp = 0
+    for root, dirs, files in os.walk(str(path)):
+        if '.git' not in root:
+            for file in files:
+                if file.endswith('.cdb'):
+                    shutil.copy(os.path.join(root, file), Temp.conf.store_temp_cbs)
+                    os.rename(os.path.join(Temp.conf.store_temp_cbs, file),
+                              os.path.join(Temp.conf.store_temp_cbs, f"{Temp.prio}-{tmp}--{file}"))
+                    tmp += 1
+
+
+def clean_caches(directory, cache):
+    cp = cache.all().copy()
+    paths = [file['path'] for file in directory]
+    for n, script in cp.items():
+        if script.path not in paths:
+            logging.info(f'Removed: {n}')
+            cache.remove(n)
+
+
+# @time_it
+# noinspection PyPep8Naming,SpellCheckingInspection
+def get_scripts(cache):
+    files = get_files(Temp.path)
+    if Temp.path in (all_cache := cache.all()):
+        scriptCache = all_cache[Temp.path]
+    else:
+        scriptCache = ScriptCache()
+    # print(cache)
+    if len(files) == 0:
+        return None
+    logging.info(f'{Temp.path} {len(files)}')
+    for file in all_cache:
+        if file not in files:
+            scriptCache.remove(file)
+    for fname, file in files.items():
+        if fname not in scriptCache.all().keys():
+            script = Script(fname, file['root'], Temp.prio)
+        else:
+            script = Script(**vars(scriptCache.get(fname)))
+        if file['time'] != script.time:
+            try:
+                scriptCache.add(fname, script)
+                script.checksum = md5(script.path)
+                script.prio = Temp.prio
+                script.time = os.path.getmtime(script.path)
+            except Exception as e:
+                print(e)
+    cache.add(Temp.path, scriptCache)
+    # print(vars(cache))
+    return scriptCache
+
+
+def delete(directory, cache):
+    names = [file['name'] for file in directory]
+    if len(names) == 0:
+        return
+    for n, file in cache.all().items():
+        if n not in names:
+            os.remove(file.path)
+            print(f"{file.path} deleted")
+
+
+# noinspection SpellCheckingInspection,PyPep8Naming
+def set_scripts(p_cache, o_cache):
+    files = get_files(Temp.path)
+    # p_cache = sorted(p_cache.all().items(), key=lambda z: list(map(lambda x: (x[1].prio[1], x[1].prio[0]), z[1].all().items())))
+    # get_scripts2(o_cache)
+    # print(*p_cache)
+    # print(p_cache.all().items())
+    p_cache = sorted(p_cache.all().items(), key=lambda z: list(map(lambda x: x[1].prio, z[1])))
+    scr1 = {}
+    for n, f in dict(p_cache).items():
+        for ns, s in f.all().items():
+            if ns not in scr1:
+                scr1.update({ns: s})
+
+    chk = {file.name: file for file in scr1.values()}
+    # print(len(scr1))
+    if Temp.path in (cache := o_cache.all()):
+        scriptCache = cache[Temp.path]
+    else:
+        scriptCache = ScriptCache()
+    # clean(files, scriptCache)
+    # print(scriptCache)
+    cp = scriptCache.all().copy()
+    for script in cp.values():
+        if script.path != chk[script.name].path:
+            scriptCache.remove(script.name)
+    progressbar = tqdm(total=len(chk), desc="Copying")
+    copy_on_cache(files.items(),
+                  chk=chk,
+                  scriptCache=scriptCache,
+                  progressbar=progressbar)
+    copy_on_folder(chk.items(),
+                   files=files,
+                   chk=chk,
+                   scriptCache=scriptCache,
+                   progressbar=progressbar)
+    # print(scriptCache)
+    progressbar.close()
+    o_cache.add(Temp.path, scriptCache)
+
+
+@threading
+def copy_on_cache(*args, **kwargs):
+    fname = args[0][0]
+    file = args[0][1]
+    chk = kwargs['chk']
+    scriptCache = kwargs['scriptCache']
     progressbar = kwargs['progressbar']
-    try:
-        # logging.info(f'Reflecting {_class.__tablename__} from {self.database.engine}')
-        if file.endswith('.lua'):
-            from_folder = os.path.join(root, file)
-            if (file in cache_t[scripts_from] and os.path.getmtime(from_folder) != os.path.getmtime(scripts_from)) \
-                    or (file not in cache_t[scripts_from]):
-                hash = md5(from_folder)
-                model = {file: {"hash": hash,
-                                "time": os.path.getmtime(from_folder)}}
-                cache_t[scripts_from].update(model)
-                fipp = [model.items() <= cache_p.data[patch].items()
-                        for patch in conf.yaml_config_load['Patches']
-                        if patch in cache_p.data][0]
-                ip = scripts_from in conf.yaml_config_load['Patches']
-                fi = not model.items() <= cache_p.data[scripts_from].items()
-                fifp = not ip and fi
-                fitt = ip and fi
-                if (not fipp and fitt) or (not fipp and fifp):
-                    cache_p.data[scripts_from].update(model)
-                    shutil.copy(from_folder, to_path)
-            # if file in cache_t[scripts_from] and os.path.getmtime(from_folder) == cache_p.data[scripts_from][file]['time']:
-            #     pass
-            progressbar.update(1)
-        # logging.info(f"{from_folder}")
-    except:
-        logging.exception(f'Item:{file}')
-
-
-def counter(conf):
-    folders = conf.yaml_config_load['Patches'] + [os.path.join(conf.store_repos, folder) for folder in conf.script]
-    count = [file for folder in folders
-             for root, dirs, files in os.walk(str(folder))
-             if '.git' not in root
-             for file in files
-             if file.endswith('.lua')]
-    return len(count)
-
-
-class CopyManager:
-    """
-    Manager class for copying files in folders and caching their differences.
-    """
-
-    def __init__(self, checksums, conf):
-        self.conf = conf
-        checksums.load()
-        self.cache_p = checksums
-        self.priority = [0, 0]
-        self.cache_t = {i: {} for i in self.conf.yaml_config_load['Patches'] + self.conf.script}
-        for i in self.cache_t:
-            if i not in self.cache_p.data:
-                self.cache_p.data[i] = {}
-        for i in self.cache_p.data.copy():
-            if i not in self.cache_t:
-                self.cache_p.data.pop(i)
-        self.bar = tqdm(total=counter(self.conf), desc="Copying")
-
-    # @time_it
-    def cdb_copy(self, file_to_path, file_from_path):
-        if file_from_path not in self.conf.yaml_config_load['Patches']:
-            file_from_path = os.path.join(self.conf.store_repos, file_from_path)
+    if fname in chk:
+        if fname not in scriptCache.all().keys():
+            script = Script(**vars(chk[fname]))
         else:
-            file_from_path = file_from_path
-        listdir = os.listdir(file_to_path)
-        self.cdb_path = os.path.join(self.conf.store_repos, file_from_path)
-        for root, dirs, files in os.walk(str(file_from_path)):
-            if '.git' not in root:
-                for file in [f + ".cdb" for f in sorted([Path(f).stem for f in files if f.endswith('.cdb')])]:
-                    if file not in listdir and file.endswith('.cdb'):
-                        shutil.copy(os.path.join(root, file), file_to_path)
-                        os.rename(os.path.join(file_to_path, file),
-                                  os.path.join(file_to_path, f"{self.priority[0]}{self.priority[1]}{file}"))
-                        self.priority[1] += 1
-        self.priority[0] += 1
+            script = scriptCache.get(fname)
+        progressbar.update(1)
+        # print(fname)
+        # print(os.path.getmtime(file['path']) == script.time, script.checksum == chk[fname].checksum)
+        if os.path.getmtime(file['path']) != script.time \
+                or script.checksum != chk[fname].checksum:
+            # logging.info(f'New: {script.name} → {script.path}')
+            scriptCache.add(fname, script)
+            shutil.copy(script.path, file['path'])
+            script.checksum = md5(file['path'])
+            script.time = os.path.getmtime(file['path'])
+            # print(os.path.getmtime(file['path']) == script.time, script.checksum == chk[fname].checksum)
+    else:
+        logging.info(f'Extra: | Deleted | {file["path"]}')
+        os.remove(file['path'])
 
-    # @time_it
-    def script_copy(self, to_path, scripts_from):
-        if scripts_from not in self.conf.yaml_config_load['Patches']:
-            from_path = os.path.join(self.conf.store_repos, scripts_from)
-        else:
-            from_path = scripts_from
-        for root, dirs, files in os.walk(str(from_path)):
-            if '.git' not in root:
-                # ThreadingFile(files).get(conf=self.conf,
-                #                          root=root,
-                #                          to_path=to_path,
-                #                          from_path=from_path,
-                #                          scripts_from=scripts_from,
-                #                          cache_p=self.cache_p,
-                #                          cache_t=self.cache_t,
-                #                          progressbar=self.bar)
-                files_get(files,
-                          conf=self.conf,
-                          root=root,
-                          to_path=to_path,
-                          from_path=from_path,
-                          scripts_from=scripts_from,
-                          cache_p=self.cache_p,
-                          cache_t=self.cache_t,
-                          progressbar=self.bar)
 
-    # @time_it
-    def clean_cache(self, to_path):
-        script_files = os.listdir(to_path)
-        for folder, files in self.cache_p.data.items():
-            for file, hash in files.copy().items():
-                if file not in self.cache_t[folder]:
-                    try:
-                        temp_path = '\\'.join([to_path, file])
-                        try:
-                            if md5(temp_path) == self.cache_p.data[folder][file]:
-                                os.remove(temp_path)
-                        except Exception as e:
-                            print(e)
-                        try:
-                            self.cache_p.data[folder].pop(file)
-                        except Exception as e:
-                            print(e)
-                    except:
-                        pass
-                    finally:
-                        print(f"{file}:\t{hash} removed")
-        for folder, files in self.cache_p.data.copy().items():
-            if len(self.cache_p.data[folder]) == 0:
-                self.cache_p.data.pop(folder)
-        for file in script_files:
-            count = 0
-            for k, v in self.cache_p.data.items():
-                if file in v:
-                    count += 1
-            if count == 0:
-                os.remove('\\'.join([to_path, file]))
-        self.cache_p.write()
-        print()
-        pprint({k: len(val) for k, val in self.cache_p.data.items()})
+@threading
+def copy_on_folder(*args, **kwargs):
+    name = args[0][0]
+    # file = args[0][1]
+    files = kwargs['files']
+    chk = kwargs['chk']
+    scriptCache = kwargs['scriptCache']
+    progressbar = kwargs['progressbar']
+    if name not in files:
+        script = Script(**vars(chk[name]))
+        scriptCache.add(name, script)
+        # print(script.prio == chk[name].prio, '\t', script.root)
+        path = os.path.join(Temp.path, script.name)
+        # logging.info(f'copied: {script.path} → {path}')
+        shutil.copy(script.path, path)
+        progressbar.update(1)
+        script.checksum = md5(path)
+        script.time = os.path.getmtime(path)

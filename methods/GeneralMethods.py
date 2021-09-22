@@ -51,6 +51,10 @@ def smart_truncate(content: str, length: int = 100, suffix: str = '...') -> str:
         return content
 
 
+def list_diff(li1, li2):
+    return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
+
+
 def file_read(filename):
     with open(filename, encoding='UTF-8') as f:
         content = f.readlines()
@@ -66,6 +70,18 @@ def merge_list_of_dicts(l1, l2, key):
         else:
             merged[item[key]] = item
     return [val for (_, val) in merged.items()]
+
+
+def str_dict_depth(str_dict: str):
+    length = len(str_dict)
+    depth = -2
+    for i, k in enumerate(str_dict):
+        if k == "{":
+            depth += 1
+        elif k == "}":
+            if i + 1 != length and str_dict[i + 1] != ',':
+                depth -= 1
+    return depth
 
 
 def md5(fname):

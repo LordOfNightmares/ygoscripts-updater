@@ -4,7 +4,7 @@ from methods.GeneralMethods import time_it
 
 
 def id(item):
-    return getattr(item, [key for key in vars(item).keys() if 'id' in key][0])
+    return getattr(item, [key for key in vars(item).keys() if key == 'id'][0])
 
 
 @time_it
@@ -46,5 +46,7 @@ def load_database(db_path, reflected_tables=None):
     db.load_engine(engine)
     db.MetaData.bind = db.engine
     db.reflected_tables = reflected_tables
-    reflect(db.reflected_tables, database=db)
+    # reflect(db.reflected_tables, database=db)
+    for table in db.reflected_tables:
+        reflect(table, database=db)
     return db

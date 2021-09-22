@@ -1,4 +1,3 @@
-import logging
 import os
 
 import yaml
@@ -51,28 +50,24 @@ class YamlManager:
             raise
 
 
-class Config:
-    def __init__(self, yaml_conf):
-        self.yaml_config = YamlManager(yaml_conf)
-        self.yaml_config.load()
-        if self.yaml_config.data == {}:
-            data = """Patches:
+default = """Patches:
    - 
-Merge-Except:
-   script:
-      - 
-   cdb:
-      - 
-Repositoriy-priority:
+Repository-Priority:
    script:
       - 
    cdb:
       - 
 Output-cdb: cards.cdb
 """
-            self.yaml_config.write(data=data)
-            self.yaml_config.load()
-        self.yaml_config_load = self.yaml_config.data
+
+
+class Config(YamlManager):
+    def __init__(self, path_to_file):
+        super().__init__(path_to_file)
+        self.load()
+        if self.data == {}:
+            self.write(data=default)
+            self.load()
         self.store_temp_cbs = create_folder('ygocdbs')
         self.store_repos = 'ygorepos'
         self.store_script = 'script'
@@ -84,9 +79,12 @@ Output-cdb: cards.cdb
                 return lst2
 
         repos = os.listdir(self.store_repos)
-        self.cdbs = rearrange_list(self.yaml_config_load['Repositoriy-priority']['cdb'], repos)
-        self.script = rearrange_list(self.yaml_config_load['Repositoriy-priority']['script'], repos)
+        # print(self.data)
+        self.cdbs = rearrange_list(self.data['Repository-Priority']['cdb'], repos)
+        self.scripts = rearrange_list(self.data['Repository-Priority']['script'], repos)
 
+    def paths(self):
+        return self.data['Patches'] + [os.path.join(self.store_repos, path) for path in self.scripts]
     # def merge(output, dbs=None, merge_form=True):
 #     if dbs is None:
 #         raise Exception('No Databases found')

@@ -1,7 +1,6 @@
 import json
+import pickle
 from decimal import Decimal
-
-import yaml
 
 
 class Mapping(dict):
@@ -57,6 +56,51 @@ class Mapping(dict):
     #     return unicode(repr(self.__dict__))
 
 
+class AbstractFactoryRepo:
+    def __init__(self, path=None):
+        self.__dict__ = self.load(path)
+
+    def add(self, key, entity):
+        self.__dict__[key] = entity
+
+    def all(self):
+        return self.__dict__
+
+    def remove(self, key):
+        if key in self.all():
+            temp = self.__dict__[key]
+            del self.__dict__[key]
+            return temp
+        else:
+            return None
+
+    def get(self, key):
+        if key in self.all():
+            return self.__dict__[key]
+        else:
+            return None
+
+    def __repr__(self):
+        return json.dumps(self.__dict__, sort_keys=True, default=lambda o: o.__dict__, indent=2)
+    def __iter__(self):
+        for k, v in self.__dict__.items():
+            yield k, v
+    def save(self, path):
+        pickle.dump(self.__dict__, open(path, 'wb'))
+
+    def load(self, path):
+        try:
+            return pickle.load(open(path, 'rb'))
+        except FileNotFoundError:
+            return {}
+        except TypeError:
+            return {}
+
+
+class FactoryRepo(AbstractFactoryRepo):
+    pass
+
+
 class fakefloat(float):
     def __init__(self, value):
         super().__init__()
@@ -78,3 +122,7 @@ class ComplexEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+class Temp:
+    prio = None
+    path = None
+    conf = None

@@ -1,11 +1,7 @@
 Patches:
-   - 
-Merge-Except:
-   script:
-      - 
-   cdb:
-      - 
-Repositoriy-priority:
+#   - Zerrata
+   - Yerrata
+Repository-Priority:
    script:
       - 
    cdb:

@@ -47,6 +47,8 @@ class EngineUri(EngineUriMeta):
         else:
             raise Exception("database in database uri not set")
         return ''.join([v for v in kwargs.values() if v])
+
+
 class DB:
     def __init__(self, engine_uri=None):
         self.engine_uri = engine_uri
