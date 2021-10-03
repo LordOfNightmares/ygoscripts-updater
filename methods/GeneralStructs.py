@@ -82,9 +82,11 @@ class AbstractFactoryRepo:
 
     def __repr__(self):
         return json.dumps(self.__dict__, sort_keys=True, default=lambda o: o.__dict__, indent=2)
+
     def __iter__(self):
         for k, v in self.__dict__.items():
             yield k, v
+
     def save(self, path):
         pickle.dump(self.__dict__, open(path, 'wb'))
 
@@ -126,3 +128,8 @@ class Temp:
     prio = None
     path = None
     conf = None
+#
+#
+# a = {'help': 3, 'a': 2}
+# x = json.dumps({"set":set(a)})
+# print(json.loads(x))

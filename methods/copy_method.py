@@ -72,7 +72,7 @@ def clean_caches(directory, cache):
     paths = [file['path'] for file in directory]
     for n, script in cp.items():
         if script.path not in paths:
-            logging.info(f'Removed: {n}')
+            logging.info(f'Removed: {n}\t - \t{script.root}')
             cache.remove(n)
 
 
@@ -84,13 +84,15 @@ def get_scripts(cache):
         scriptCache = all_cache[Temp.path]
     else:
         scriptCache = ScriptCache()
-    # print(cache)
+
+    clean_caches(files.values(), scriptCache)
     if len(files) == 0:
         return None
     logging.info(f'{Temp.path} {len(files)}')
     for file in all_cache:
         if file not in files:
             scriptCache.remove(file)
+
     for fname, file in files.items():
         if fname not in scriptCache.all().keys():
             script = Script(fname, file['root'], Temp.prio)
@@ -104,6 +106,7 @@ def get_scripts(cache):
                 script.time = os.path.getmtime(script.path)
             except Exception as e:
                 print(e)
+
     cache.add(Temp.path, scriptCache)
     # print(vars(cache))
     return scriptCache
@@ -139,11 +142,18 @@ def set_scripts(p_cache, o_cache):
         scriptCache = cache[Temp.path]
     else:
         scriptCache = ScriptCache()
+
+    # cp = cache.all().copy()
+    # paths = [file['path'] for file in directory]
+    # for n, script in cp.items():
+    #     if script.path not in paths:
+    #         logging.info(f'Removed: {n}')
+    #         cache.remove(n)
     # clean(files, scriptCache)
-    # print(scriptCache)
+    # print(scriptCache)script.path
     cp = scriptCache.all().copy()
     for script in cp.values():
-        if script.path != chk[script.name].path:
+        if script.name in chk and script.path != chk[script.name].path:
             scriptCache.remove(script.name)
     progressbar = tqdm(total=len(chk), desc="Copying")
     copy_on_cache(files.items(),

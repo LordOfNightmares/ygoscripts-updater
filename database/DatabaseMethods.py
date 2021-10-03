@@ -36,7 +36,6 @@ def add_to_db(db, data):
         session.close()
 
 
-# @time_it
 def load_database(db_path, reflected_tables=None):
     if reflected_tables is None:
         reflected_tables = [Datas, Texts]
@@ -46,7 +45,5 @@ def load_database(db_path, reflected_tables=None):
     db.load_engine(engine)
     db.MetaData.bind = db.engine
     db.reflected_tables = reflected_tables
-    # reflect(db.reflected_tables, database=db)
-    for table in db.reflected_tables:
-        reflect(table, database=db)
+    reflect(db.reflected_tables, database=db)
     return db
