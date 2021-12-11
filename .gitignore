@@ -14,6 +14,7 @@ __pycache__/
 *.cdb
 # C extensions
 *.so
+*.bin
 
 # Distribution / packaging
 .Python
@@ -142,3 +143,4 @@ node_modules
 /Zerrata/*
 /ygorepos/*
 /ygocdbs/*
+/Yerrata/*

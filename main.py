@@ -1,34 +1,13 @@
 import logging
-import os
 import traceback
 from datetime import datetime
 
-from sqlalchemy import create_engine
-
-from database import DatabaseMethods
+from database.DatabaseMethods import database_operations
 from methods import config
 from methods.GeneralMethods import time_it, list_diff
 from methods.GeneralStructs import Temp
 from methods.copy_method import get_scripts, set_scripts, Cache, cdb_copy
 from methods.prep.git import preparation
-
-
-def merge_cdbs():
-    cdbs = sorted(["/".join([Temp.conf.store_temp_cbs, file]) for file in os.listdir(Temp.conf.store_temp_cbs)],
-                  reverse=True)
-    dbs = [DatabaseMethods.load_database(cdb) for cdb in cdbs]
-
-    if len(cdbs) == 0:
-        return
-    name = Temp.conf.data['Output-cdb']
-    try:
-        os.remove(name)
-    except:
-        pass
-    dbs[0].MetaData.create_all(create_engine(f'sqlite:///{name}'))
-    output_cdb = DatabaseMethods.load_database(name)
-    merge = DatabaseMethods.merge(dbs)
-    DatabaseMethods.add_to_db(output_cdb, merge)
 
 
 def clean_script_cache(directories, cache):
@@ -71,8 +50,9 @@ if __name__ == '__main__':
         preparation()
         Temp.conf = config.Config('config.yaml')
         scripts(Temp.conf)
-        merge_cdbs()
+        database_operations()
     except Exception:
+        logging.exception(traceback.format_exc())
         with open("error.txt", 'a') as error_file:
             error_file.write(f'{datetime.now().strftime("%d/%m/%Y | %H:%M:%S |")}\n{traceback.format_exc()}\n\n')
     finally:
